@@ -19,20 +19,28 @@ jobs:
     - name: Create working directory
       run: mkdir -p downloads
     
+    - name: Debug Information
+      run: |
+        echo "Repository owner: eveningsco"
+        echo "Current repository: eveningsco/sol-release"
+        echo "Checking repository access..."
+        curl -L \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
+          "https://api.github.com/repos/eveningsco/sol-server" | jq '.name'
+    
     - name: Download latest sol-server
       run: |
         echo "Fetching sol-server release..."
         LATEST_RELEASE=$(curl -L \
           -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-          https://api.github.com/repos/${{ github.repository_owner }}/sol-server/releases/latest)
+          -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
+          "https://api.github.com/repos/eveningsco/sol-server/releases/latest")
         
-        if [ $? -ne 0 ]; then
-          echo "Failed to fetch sol-server release information"
-          exit 1
-        fi
+        echo "API Response for sol-server:"
+        echo "$LATEST_RELEASE" | jq '.'
         
-        DOWNLOAD_URL=$(echo $LATEST_RELEASE | jq -r '.assets[0].browser_download_url')
+        DOWNLOAD_URL=$(echo "$LATEST_RELEASE" | jq -r '.assets[0].browser_download_url')
         
         if [ "$DOWNLOAD_URL" = "null" ] || [ -z "$DOWNLOAD_URL" ]; then
           echo "No download URL found for sol-server"
@@ -41,12 +49,9 @@ jobs:
         fi
         
         echo "Downloading from: $DOWNLOAD_URL"
-        curl -L -o downloads/sol-server "$DOWNLOAD_URL"
-        
-        if [ $? -ne 0 ]; then
-          echo "Failed to download sol-server"
-          exit 1
-        fi
+        curl -L \
+          -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
+          -o downloads/sol-server "$DOWNLOAD_URL"
         
         chmod +x downloads/sol-server
     
@@ -55,15 +60,13 @@ jobs:
         echo "Fetching sol-software release..."
         LATEST_RELEASE=$(curl -L \
           -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-          https://api.github.com/repos/${{ github.repository_owner }}/sol-software/releases/latest)
+          -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
+          "https://api.github.com/repos/eveningsco/sol-software/releases/latest")
         
-        if [ $? -ne 0 ]; then
-          echo "Failed to fetch sol-software release information"
-          exit 1
-        fi
+        echo "API Response for sol-software:"
+        echo "$LATEST_RELEASE" | jq '.'
         
-        DOWNLOAD_URL=$(echo $LATEST_RELEASE | jq -r '.assets[0].browser_download_url')
+        DOWNLOAD_URL=$(echo "$LATEST_RELEASE" | jq -r '.assets[0].browser_download_url')
         
         if [ "$DOWNLOAD_URL" = "null" ] || [ -z "$DOWNLOAD_URL" ]; then
           echo "No download URL found for sol-software"
@@ -72,12 +75,9 @@ jobs:
         fi
         
         echo "Downloading from: $DOWNLOAD_URL"
-        curl -L -o downloads/sol-software "$DOWNLOAD_URL"
-        
-        if [ $? -ne 0 ]; then
-          echo "Failed to download sol-software"
-          exit 1
-        fi
+        curl -L \
+          -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
+          -o downloads/sol-software "$DOWNLOAD_URL"
         
         chmod +x downloads/sol-software
     
@@ -87,6 +87,7 @@ jobs:
         ls -la downloads/
     
     - name: Create ZIP file
+      if: success()
       run: |
         cd downloads
         zip -r ../sol-release-${{ steps.date.outputs.date }}.zip *
@@ -95,6 +96,7 @@ jobs:
         ls -la sol-release-${{ steps.date.outputs.date }}.zip
     
     - name: Create Release
+      if: success()
       id: create_release
       uses: actions/create-release@v1
       env:
@@ -113,6 +115,7 @@ jobs:
         prerelease: false
     
     - name: Upload Release Asset
+      if: success()
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
