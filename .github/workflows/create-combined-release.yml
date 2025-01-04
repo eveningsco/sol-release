@@ -8,6 +8,8 @@ on:
 jobs:
   create-combined-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     steps:
     - uses: actions/checkout@v3
@@ -22,31 +24,30 @@ jobs:
     - name: Download latest sol-server
       run: |
         echo "Fetching sol-server release..."
-        LATEST_RELEASE=$(curl -L \
+        # First get the asset ID
+        ASSET_INFO=$(curl -L \
           -H "Accept: application/vnd.github+json" \
           -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
           "https://api.github.com/repos/eveningsco/sol-server/releases/latest")
         
-        echo "API Response for sol-server:"
-        echo "$LATEST_RELEASE" | jq '.'
+        ASSET_ID=$(echo "$ASSET_INFO" | jq -r '.assets[0].id')
         
-        DOWNLOAD_URL=$(echo "$LATEST_RELEASE" | jq -r '.assets[0].browser_download_url')
-        
-        if [ "$DOWNLOAD_URL" = "null" ] || [ -z "$DOWNLOAD_URL" ]; then
-          echo "No download URL found for sol-server"
-          echo "Release info: $LATEST_RELEASE"
+        if [ -z "$ASSET_ID" ] || [ "$ASSET_ID" = "null" ]; then
+          echo "Failed to get asset ID"
           exit 1
         fi
         
-        echo "Downloading from: $DOWNLOAD_URL"
-        # Use -L to follow redirects and properly authenticate the download
+        echo "Downloading asset ID: $ASSET_ID"
+        
+        # Download the asset using the asset API endpoint
         curl -L \
           -H "Accept: application/octet-stream" \
           -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
-          -o downloads/sol-server "$DOWNLOAD_URL"
+          "https://api.github.com/repos/eveningsco/sol-server/releases/assets/$ASSET_ID" \
+          -o downloads/sol-server
         
-        # Verify the file size
-        EXPECTED_SIZE=$(echo "$LATEST_RELEASE" | jq -r '.assets[0].size')
+        # Verify file size
+        EXPECTED_SIZE=$(echo "$ASSET_INFO" | jq -r '.assets[0].size')
         ACTUAL_SIZE=$(stat -f%z downloads/sol-server 2>/dev/null || stat -c%s downloads/sol-server)
         echo "Expected size: $EXPECTED_SIZE bytes"
         echo "Actual size: $ACTUAL_SIZE bytes"
@@ -61,31 +62,30 @@ jobs:
     - name: Download latest sol-software
       run: |
         echo "Fetching sol-software release..."
-        LATEST_RELEASE=$(curl -L \
+        # First get the asset ID
+        ASSET_INFO=$(curl -L \
           -H "Accept: application/vnd.github+json" \
           -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
           "https://api.github.com/repos/eveningsco/sol-software/releases/latest")
         
-        echo "API Response for sol-software:"
-        echo "$LATEST_RELEASE" | jq '.'
+        ASSET_ID=$(echo "$ASSET_INFO" | jq -r '.assets[0].id')
         
-        DOWNLOAD_URL=$(echo "$LATEST_RELEASE" | jq -r '.assets[0].browser_download_url')
-        
-        if [ "$DOWNLOAD_URL" = "null" ] || [ -z "$DOWNLOAD_URL" ]; then
-          echo "No download URL found for sol-software"
-          echo "Release info: $LATEST_RELEASE"
+        if [ -z "$ASSET_ID" ] || [ "$ASSET_ID" = "null" ]; then
+          echo "Failed to get asset ID"
           exit 1
         fi
         
-        echo "Downloading from: $DOWNLOAD_URL"
-        # Use -L to follow redirects and properly authenticate the download
+        echo "Downloading asset ID: $ASSET_ID"
+        
+        # Download the asset using the asset API endpoint
         curl -L \
           -H "Accept: application/octet-stream" \
           -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
-          -o downloads/sol-software "$DOWNLOAD_URL"
+          "https://api.github.com/repos/eveningsco/sol-software/releases/assets/$ASSET_ID" \
+          -o downloads/sol-software
         
-        # Verify the file size
-        EXPECTED_SIZE=$(echo "$LATEST_RELEASE" | jq -r '.assets[0].size')
+        # Verify file size
+        EXPECTED_SIZE=$(echo "$ASSET_INFO" | jq -r '.assets[0].size')
         ACTUAL_SIZE=$(stat -f%z downloads/sol-software 2>/dev/null || stat -c%s downloads/sol-software)
         echo "Expected size: $EXPECTED_SIZE bytes"
         echo "Actual size: $ACTUAL_SIZE bytes"
@@ -125,8 +125,8 @@ jobs:
           Build date: ${{ steps.date.outputs.date }}
           
           This release includes:
-          - Latest sol-server (from: Release-${{ steps.server_tag }})
-          - Latest sol-software (from: Release-${{ steps.software_tag }})
+          - Latest sol-server
+          - Latest sol-software
         draft: false
         prerelease: false
     
