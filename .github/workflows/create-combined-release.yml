@@ -2,7 +2,7 @@ name: Create Combined Release
 
 on:
   repository_dispatch:
-    types: [new_sol_release]
+    types: [new_sol_release, new_sol_utils_release]
   workflow_dispatch:  # Allow manual triggering
 
 jobs:
@@ -96,6 +96,49 @@ jobs:
         fi
         
         chmod +x downloads/sol-software
+
+    - name: Download latest sol-utils executables
+      run: |
+        echo "Fetching sol-utils release..."
+        # First get the release info
+        RELEASE_INFO=$(curl -L \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
+          "https://api.github.com/repos/eveningsco/sol-utils/releases/latest")
+        
+        # Download mass_gadget_watchdog
+        MGW_ASSET_ID=$(echo "$RELEASE_INFO" | jq -r '.assets[] | select(.name=="mass_gadget_watchdog") | .id')
+        
+        if [ -n "$MGW_ASSET_ID" ] && [ "$MGW_ASSET_ID" != "null" ]; then
+          echo "Downloading mass_gadget_watchdog (Asset ID: $MGW_ASSET_ID)"
+          curl -L \
+            -H "Accept: application/octet-stream" \
+            -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
+            "https://api.github.com/repos/eveningsco/sol-utils/releases/assets/$MGW_ASSET_ID" \
+            -o downloads/mass_gadget_watchdog
+            
+          chmod +x downloads/mass_gadget_watchdog
+        else
+          echo "Failed to find mass_gadget_watchdog asset"
+          exit 1
+        fi
+        
+        # Download update_version_info
+        UVI_ASSET_ID=$(echo "$RELEASE_INFO" | jq -r '.assets[] | select(.name=="update_version_info") | .id')
+        
+        if [ -n "$UVI_ASSET_ID" ] && [ "$UVI_ASSET_ID" != "null" ]; then
+          echo "Downloading update_version_info (Asset ID: $UVI_ASSET_ID)"
+          curl -L \
+            -H "Accept: application/octet-stream" \
+            -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
+            "https://api.github.com/repos/eveningsco/sol-utils/releases/assets/$UVI_ASSET_ID" \
+            -o downloads/update_version_info
+            
+          chmod +x downloads/update_version_info
+        else
+          echo "Failed to find update_version_info asset"
+          exit 1
+        fi
     
     - name: List downloaded files
       run: |
@@ -127,6 +170,9 @@ jobs:
           This release includes:
           - Latest sol-server
           - Latest sol-software
+          - Latest sol-utils:
+            - mass_gadget_watchdog
+            - update_version_info
         draft: false
         prerelease: false
     
