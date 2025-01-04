@@ -19,16 +19,6 @@ jobs:
     - name: Create working directory
       run: mkdir -p downloads
     
-    - name: Debug Information
-      run: |
-        echo "Repository owner: eveningsco"
-        echo "Current repository: eveningsco/sol-release"
-        echo "Checking repository access..."
-        curl -L \
-          -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
-          "https://api.github.com/repos/eveningsco/sol-server" | jq '.name'
-    
     - name: Download latest sol-server
       run: |
         echo "Fetching sol-server release..."
@@ -49,9 +39,22 @@ jobs:
         fi
         
         echo "Downloading from: $DOWNLOAD_URL"
+        # Use -L to follow redirects and properly authenticate the download
         curl -L \
+          -H "Accept: application/octet-stream" \
           -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
           -o downloads/sol-server "$DOWNLOAD_URL"
+        
+        # Verify the file size
+        EXPECTED_SIZE=$(echo "$LATEST_RELEASE" | jq -r '.assets[0].size')
+        ACTUAL_SIZE=$(stat -f%z downloads/sol-server 2>/dev/null || stat -c%s downloads/sol-server)
+        echo "Expected size: $EXPECTED_SIZE bytes"
+        echo "Actual size: $ACTUAL_SIZE bytes"
+        
+        if [ "$ACTUAL_SIZE" != "$EXPECTED_SIZE" ]; then
+          echo "Error: File size mismatch!"
+          exit 1
+        fi
         
         chmod +x downloads/sol-server
     
@@ -75,16 +78,29 @@ jobs:
         fi
         
         echo "Downloading from: $DOWNLOAD_URL"
+        # Use -L to follow redirects and properly authenticate the download
         curl -L \
+          -H "Accept: application/octet-stream" \
           -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
           -o downloads/sol-software "$DOWNLOAD_URL"
+        
+        # Verify the file size
+        EXPECTED_SIZE=$(echo "$LATEST_RELEASE" | jq -r '.assets[0].size')
+        ACTUAL_SIZE=$(stat -f%z downloads/sol-software 2>/dev/null || stat -c%s downloads/sol-software)
+        echo "Expected size: $EXPECTED_SIZE bytes"
+        echo "Actual size: $ACTUAL_SIZE bytes"
+        
+        if [ "$ACTUAL_SIZE" != "$EXPECTED_SIZE" ]; then
+          echo "Error: File size mismatch!"
+          exit 1
+        fi
         
         chmod +x downloads/sol-software
     
     - name: List downloaded files
       run: |
         echo "Contents of downloads directory:"
-        ls -la downloads/
+        ls -lh downloads/
     
     - name: Create ZIP file
       if: success()
@@ -93,7 +109,7 @@ jobs:
         zip -r ../sol-release-${{ steps.date.outputs.date }}.zip *
         cd ..
         echo "Created ZIP file:"
-        ls -la sol-release-${{ steps.date.outputs.date }}.zip
+        ls -lh sol-release-${{ steps.date.outputs.date }}.zip
     
     - name: Create Release
       if: success()
@@ -109,8 +125,8 @@ jobs:
           Build date: ${{ steps.date.outputs.date }}
           
           This release includes:
-          - Latest sol-server
-          - Latest sol-software
+          - Latest sol-server (from: Release-${{ steps.server_tag }})
+          - Latest sol-software (from: Release-${{ steps.software_tag }})
         draft: false
         prerelease: false
     
