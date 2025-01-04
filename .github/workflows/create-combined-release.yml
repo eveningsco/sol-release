@@ -21,33 +21,78 @@ jobs:
     
     - name: Download latest sol-server
       run: |
-        # Get latest release info
-        SERVER_RELEASE_URL=$(curl -s https://api.github.com/repos/${{ github.repository_owner }}/sol-server/releases/latest | jq -r '.assets[0].browser_download_url')
-        if [ ! -z "$SERVER_RELEASE_URL" ]; then
-          curl -L -o downloads/sol-server "$SERVER_RELEASE_URL"
-          chmod +x downloads/sol-server
-        else
-          echo "No sol-server release found"
+        echo "Fetching sol-server release..."
+        LATEST_RELEASE=$(curl -L \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          https://api.github.com/repos/${{ github.repository_owner }}/sol-server/releases/latest)
+        
+        if [ $? -ne 0 ]; then
+          echo "Failed to fetch sol-server release information"
           exit 1
         fi
+        
+        DOWNLOAD_URL=$(echo $LATEST_RELEASE | jq -r '.assets[0].browser_download_url')
+        
+        if [ "$DOWNLOAD_URL" = "null" ] || [ -z "$DOWNLOAD_URL" ]; then
+          echo "No download URL found for sol-server"
+          echo "Release info: $LATEST_RELEASE"
+          exit 1
+        fi
+        
+        echo "Downloading from: $DOWNLOAD_URL"
+        curl -L -o downloads/sol-server "$DOWNLOAD_URL"
+        
+        if [ $? -ne 0 ]; then
+          echo "Failed to download sol-server"
+          exit 1
+        fi
+        
+        chmod +x downloads/sol-server
     
     - name: Download latest sol-software
       run: |
-        # Get latest release info
-        SOFTWARE_RELEASE_URL=$(curl -s https://api.github.com/repos/${{ github.repository_owner }}/sol-software/releases/latest | jq -r '.assets[0].browser_download_url')
-        if [ ! -z "$SOFTWARE_RELEASE_URL" ]; then
-          curl -L -o downloads/sol-software "$SOFTWARE_RELEASE_URL"
-          chmod +x downloads/sol-software
-        else
-          echo "No sol-software release found"
+        echo "Fetching sol-software release..."
+        LATEST_RELEASE=$(curl -L \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          https://api.github.com/repos/${{ github.repository_owner }}/sol-software/releases/latest)
+        
+        if [ $? -ne 0 ]; then
+          echo "Failed to fetch sol-software release information"
           exit 1
         fi
+        
+        DOWNLOAD_URL=$(echo $LATEST_RELEASE | jq -r '.assets[0].browser_download_url')
+        
+        if [ "$DOWNLOAD_URL" = "null" ] || [ -z "$DOWNLOAD_URL" ]; then
+          echo "No download URL found for sol-software"
+          echo "Release info: $LATEST_RELEASE"
+          exit 1
+        fi
+        
+        echo "Downloading from: $DOWNLOAD_URL"
+        curl -L -o downloads/sol-software "$DOWNLOAD_URL"
+        
+        if [ $? -ne 0 ]; then
+          echo "Failed to download sol-software"
+          exit 1
+        fi
+        
+        chmod +x downloads/sol-software
+    
+    - name: List downloaded files
+      run: |
+        echo "Contents of downloads directory:"
+        ls -la downloads/
     
     - name: Create ZIP file
       run: |
         cd downloads
         zip -r ../sol-release-${{ steps.date.outputs.date }}.zip *
         cd ..
+        echo "Created ZIP file:"
+        ls -la sol-release-${{ steps.date.outputs.date }}.zip
     
     - name: Create Release
       id: create_release
@@ -60,6 +105,10 @@ jobs:
         body: |
           Combined SOL release package
           Build date: ${{ steps.date.outputs.date }}
+          
+          This release includes:
+          - Latest sol-server
+          - Latest sol-software
         draft: false
         prerelease: false
     
