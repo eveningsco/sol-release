@@ -18,8 +18,12 @@ jobs:
       id: date
       run: echo "date=$(date +'%m%d%Y_%H-%M-%S')" >> $GITHUB_OUTPUT
     
-    - name: Create working directory
-      run: mkdir -p downloads
+    - name: Create working directory structure
+      run: |
+        mkdir -p downloads/bin
+        mkdir -p downloads/services
+        mkdir -p downloads/config
+        mkdir -p downloads/logrotate
     
     - name: Download latest sol-server
       run: |
@@ -97,53 +101,62 @@ jobs:
         
         chmod +x downloads/sol-software
 
-    - name: Download latest sol-utils executables
+    - name: Download latest sol-utils files
       run: |
         echo "Fetching sol-utils release..."
-        # First get the release info
+        # Get the release info
         RELEASE_INFO=$(curl -L \
           -H "Accept: application/vnd.github+json" \
           -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
           "https://api.github.com/repos/eveningsco/sol-utils/releases/latest")
         
-        # Download mass_gadget_watchdog
-        MGW_ASSET_ID=$(echo "$RELEASE_INFO" | jq -r '.assets[] | select(.name=="mass_gadget_watchdog") | .id')
+        # Function to download an asset
+        download_asset() {
+          local asset_name=$1
+          local output_path=$2
+          local ASSET_ID=$(echo "$RELEASE_INFO" | jq -r ".assets[] | select(.name==\"$asset_name\") | .id")
+          
+          if [ -n "$ASSET_ID" ] && [ "$ASSET_ID" != "null" ]; then
+            echo "Downloading $asset_name (Asset ID: $ASSET_ID)"
+            curl -L \
+              -H "Accept: application/octet-stream" \
+              -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
+              "https://api.github.com/repos/eveningsco/sol-utils/releases/assets/$ASSET_ID" \
+              -o "$output_path"
+              
+            if [[ "$asset_name" != *.service && "$asset_name" != *.yml && "$asset_name" != *logrotate ]]; then
+              chmod +x "$output_path"
+            fi
+          else
+            echo "Failed to find $asset_name asset"
+            exit 1
+          fi
+        }
         
-        if [ -n "$MGW_ASSET_ID" ] && [ "$MGW_ASSET_ID" != "null" ]; then
-          echo "Downloading mass_gadget_watchdog (Asset ID: $MGW_ASSET_ID)"
-          curl -L \
-            -H "Accept: application/octet-stream" \
-            -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
-            "https://api.github.com/repos/eveningsco/sol-utils/releases/assets/$MGW_ASSET_ID" \
-            -o downloads/mass_gadget_watchdog
-            
-          chmod +x downloads/mass_gadget_watchdog
-        else
-          echo "Failed to find mass_gadget_watchdog asset"
-          exit 1
-        fi
+        # Download executables
+        download_asset "mass_gadget_watchdog" "downloads/bin/mass_gadget_watchdog"
+        download_asset "update_version_info" "downloads/bin/update_version_info"
+        download_asset "gpio_shutdown_trigger" "downloads/bin/gpio_shutdown_trigger"
+        download_asset "off_mass_gadget" "downloads/bin/off_mass_gadget"
+        download_asset "on_mass_gadget" "downloads/bin/on_mass_gadget"
         
-        # Download update_version_info
-        UVI_ASSET_ID=$(echo "$RELEASE_INFO" | jq -r '.assets[] | select(.name=="update_version_info") | .id')
+        # Download service files
+        download_asset "mass_gadget_watchdog.service" "downloads/services/mass_gadget_watchdog.service"
+        download_asset "update_version_info.service" "downloads/services/update_version_info.service"
+        download_asset "fbcp.service" "downloads/services/fbcp.service"
+        download_asset "filebeat.service" "downloads/services/filebeat.service"
         
-        if [ -n "$UVI_ASSET_ID" ] && [ "$UVI_ASSET_ID" != "null" ]; then
-          echo "Downloading update_version_info (Asset ID: $UVI_ASSET_ID)"
-          curl -L \
-            -H "Accept: application/octet-stream" \
-            -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
-            "https://api.github.com/repos/eveningsco/sol-utils/releases/assets/$UVI_ASSET_ID" \
-            -o downloads/update_version_info
-            
-          chmod +x downloads/update_version_info
-        else
-          echo "Failed to find update_version_info asset"
-          exit 1
-        fi
-    
+        # Download config files
+        download_asset "filebeat.yml" "downloads/config/filebeat.yml"
+        
+        # Download logrotate files
+        download_asset "sol-server-logrotate" "downloads/logrotate/sol-server-logrotate"
+        download_asset "sol-software-logrotate" "downloads/logrotate/sol-software-logrotate"
+
     - name: List downloaded files
       run: |
         echo "Contents of downloads directory:"
-        ls -lh downloads/
+        ls -lR downloads/
     
     - name: Create ZIP file
       if: success()
@@ -171,10 +184,27 @@ jobs:
           - Latest sol-server
           - Latest sol-software
           - Latest sol-utils:
+            Executables:
             - mass_gadget_watchdog
             - update_version_info
+            - gpio_shutdown_trigger
+            - off_mass_gadget
+            - on_mass_gadget
+            
+            Service Files:
+            - mass_gadget_watchdog.service
+            - update_version_info.service
+            - fbcp.service
+            - filebeat.service
+            
+            Config Files:
+            - filebeat.yml
+            
+            Logrotate Files:
+            - sol-server-logrotate
+            - sol-software-logrotate
         draft: false
-        prerelease: false
+        prerelease: true
     
     - name: Upload Release Asset
       if: success()
