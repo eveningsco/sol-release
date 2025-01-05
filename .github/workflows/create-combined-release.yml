@@ -28,78 +28,78 @@ jobs:
     - name: Download latest sol-server
       run: |
         echo "Fetching sol-server release..."
-        # First get the asset ID
-        ASSET_INFO=$(curl -L \
+        RELEASE_INFO=$(curl -L \
           -H "Accept: application/vnd.github+json" \
           -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
           "https://api.github.com/repos/eveningsco/sol-server/releases/latest")
         
-        ASSET_ID=$(echo "$ASSET_INFO" | jq -r '.assets[0].id')
+        # Function to download an asset
+        download_asset() {
+          local asset_name=$1
+          local output_path=$2
+          local ASSET_ID=$(echo "$RELEASE_INFO" | jq -r ".assets[] | select(.name==\"$asset_name\") | .id")
+          
+          if [ -n "$ASSET_ID" ] && [ "$ASSET_ID" != "null" ]; then
+            echo "Downloading $asset_name (Asset ID: $ASSET_ID)"
+            curl -L \
+              -H "Accept: application/octet-stream" \
+              -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
+              "https://api.github.com/repos/eveningsco/sol-server/releases/assets/$ASSET_ID" \
+              -o "$output_path"
+              
+            if [[ "$asset_name" != *.service && "$asset_name" != *.timer ]]; then
+              chmod +x "$output_path"
+            fi
+          else
+            echo "Failed to find $asset_name asset"
+            exit 1
+          fi
+        }
         
-        if [ -z "$ASSET_ID" ] || [ "$ASSET_ID" = "null" ]; then
-          echo "Failed to get asset ID"
-          exit 1
-        fi
+        # Download executable
+        download_asset "sol-server" "downloads/bin/sol-server"
         
-        echo "Downloading asset ID: $ASSET_ID"
-        
-        # Download the asset using the asset API endpoint
-        curl -L \
-          -H "Accept: application/octet-stream" \
-          -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
-          "https://api.github.com/repos/eveningsco/sol-server/releases/assets/$ASSET_ID" \
-          -o downloads/sol-server
-        
-        # Verify file size
-        EXPECTED_SIZE=$(echo "$ASSET_INFO" | jq -r '.assets[0].size')
-        ACTUAL_SIZE=$(stat -f%z downloads/sol-server 2>/dev/null || stat -c%s downloads/sol-server)
-        echo "Expected size: $EXPECTED_SIZE bytes"
-        echo "Actual size: $ACTUAL_SIZE bytes"
-        
-        if [ "$ACTUAL_SIZE" != "$EXPECTED_SIZE" ]; then
-          echo "Error: File size mismatch!"
-          exit 1
-        fi
-        
-        chmod +x downloads/sol-server
-    
+        # Download service files
+        download_asset "sol-connectivity.service" "downloads/services/sol-connectivity.service"
+        download_asset "sol-connectivity.timer" "downloads/services/sol-connectivity.timer"
+        download_asset "sol-server.service" "downloads/services/sol-server.service"
+
     - name: Download latest sol-software
       run: |
         echo "Fetching sol-software release..."
-        # First get the asset ID
-        ASSET_INFO=$(curl -L \
+        RELEASE_INFO=$(curl -L \
           -H "Accept: application/vnd.github+json" \
           -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
           "https://api.github.com/repos/eveningsco/sol-software/releases/latest")
         
-        ASSET_ID=$(echo "$ASSET_INFO" | jq -r '.assets[0].id')
+        # Function to download an asset
+        download_asset() {
+          local asset_name=$1
+          local output_path=$2
+          local ASSET_ID=$(echo "$RELEASE_INFO" | jq -r ".assets[] | select(.name==\"$asset_name\") | .id")
+          
+          if [ -n "$ASSET_ID" ] && [ "$ASSET_ID" != "null" ]; then
+            echo "Downloading $asset_name (Asset ID: $ASSET_ID)"
+            curl -L \
+              -H "Accept: application/octet-stream" \
+              -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
+              "https://api.github.com/repos/eveningsco/sol-software/releases/assets/$ASSET_ID" \
+              -o "$output_path"
+              
+            if [[ "$asset_name" != *.service ]]; then
+              chmod +x "$output_path"
+            fi
+          else
+            echo "Failed to find $asset_name asset"
+            exit 1
+          fi
+        }
         
-        if [ -z "$ASSET_ID" ] || [ "$ASSET_ID" = "null" ]; then
-          echo "Failed to get asset ID"
-          exit 1
-        fi
+        # Download executable
+        download_asset "sol-software" "downloads/bin/sol-software"
         
-        echo "Downloading asset ID: $ASSET_ID"
-        
-        # Download the asset using the asset API endpoint
-        curl -L \
-          -H "Accept: application/octet-stream" \
-          -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
-          "https://api.github.com/repos/eveningsco/sol-software/releases/assets/$ASSET_ID" \
-          -o downloads/sol-software
-        
-        # Verify file size
-        EXPECTED_SIZE=$(echo "$ASSET_INFO" | jq -r '.assets[0].size')
-        ACTUAL_SIZE=$(stat -f%z downloads/sol-software 2>/dev/null || stat -c%s downloads/sol-software)
-        echo "Expected size: $EXPECTED_SIZE bytes"
-        echo "Actual size: $ACTUAL_SIZE bytes"
-        
-        if [ "$ACTUAL_SIZE" != "$EXPECTED_SIZE" ]; then
-          echo "Error: File size mismatch!"
-          exit 1
-        fi
-        
-        chmod +x downloads/sol-software
+        # Download service file
+        download_asset "sol-software.service" "downloads/services/sol-software.service"
 
     - name: Download latest sol-utils files
       run: |
@@ -181,28 +181,31 @@ jobs:
           Build date: ${{ steps.date.outputs.date }}
           
           This release includes:
-          - Latest sol-server
-          - Latest sol-software
-          - Latest sol-utils:
-            Executables:
-            - mass_gadget_watchdog
-            - update_version_info
-            - gpio_shutdown_trigger
-            - off_mass_gadget
-            - on_mass_gadget
-            
-            Service Files:
-            - mass_gadget_watchdog.service
-            - update_version_info.service
-            - fbcp.service
-            - filebeat.service
-            
-            Config Files:
-            - filebeat.yml
-            
-            Logrotate Files:
-            - sol-server-logrotate
-            - sol-software-logrotate
+          Executables:
+          - sol-server
+          - sol-software
+          - mass_gadget_watchdog
+          - update_version_info
+          - gpio_shutdown_trigger
+          - off_mass_gadget
+          - on_mass_gadget
+          
+          Service Files:
+          - sol-server.service
+          - sol-software.service
+          - sol-connectivity.service
+          - sol-connectivity.timer
+          - mass_gadget_watchdog.service
+          - update_version_info.service
+          - fbcp.service
+          - filebeat.service
+          
+          Config Files:
+          - filebeat.yml
+          
+          Logrotate Files:
+          - sol-server-logrotate
+          - sol-software-logrotate
         draft: false
         prerelease: true
     
