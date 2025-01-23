@@ -57,7 +57,7 @@ jobs:
         }
         
         # Download executable
-        download_asset "sol-server" "downloads/bin/sol-server"
+        download_asset "sol-server.zip" "downloads/bin/sol-server.zip"
         
         # Download service files
         download_asset "sol-connectivity.service" "downloads/services/sol-connectivity.service"
@@ -183,7 +183,7 @@ jobs:
           
           This release includes:
           Executables:
-          - sol-server
+          - sol-server.zip
           - sol-software
           - sol-update
           - mass_gadget_watchdog
