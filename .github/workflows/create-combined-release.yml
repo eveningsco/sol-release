@@ -169,6 +169,33 @@ jobs:
         echo "Created ZIP file:"
         ls -lh sol-release-${{ steps.date.outputs.date }}.zip
     
+    - name: Clean up old pre-releases
+      if: success()
+      run: |
+        # Get all releases and filter pre-releases
+        releases=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                       "https://api.github.com/repos/${{ github.repository }}/releases")
+        
+        # Filter pre-releases and sort by creation date
+        pre_releases=$(echo "$releases" | jq -r '.[] | select(.prerelease == true) | {id: .id, created_at: .created_at}' | \
+                      jq -s '. | sort_by(.created_at) | reverse')
+        
+        # Get number of pre-releases
+        count=$(echo "$pre_releases" | jq length)
+        
+        # If more than 4 pre-releases exist (not counting the new one we'll create)
+        if [ "$count" -gt 4 ]; then
+          # Get IDs of releases to delete (keeping newest 4)
+          to_delete=$(echo "$pre_releases" | jq -r '.[4:] | .[].id')
+          
+          # Delete each old release
+          for release_id in $to_delete; do
+            curl -X DELETE -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                 "https://api.github.com/repos/${{ github.repository }}/releases/$release_id"
+            echo "Deleted release $release_id"
+          done
+        fi
+
     - name: Create Release
       if: success()
       id: create_release
