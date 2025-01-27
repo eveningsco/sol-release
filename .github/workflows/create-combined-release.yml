@@ -134,8 +134,8 @@ jobs:
         }
         
         # Download executables
-        download_asset "sol-update" "downloads/bin/sol-update"
-        download_asset "sol-update-manager" "downloads/bin/sol-update-manager"
+        download_asset "sol-update-gui" "downloads/bin/sol-update-gui"
+        download_asset "sol-update-backend" "downloads/bin/sol-update-backend"
         download_asset "mass_gadget_watchdog" "downloads/bin/mass_gadget_watchdog"
         download_asset "update_version_info" "downloads/bin/update_version_info"
         download_asset "gpio_shutdown_trigger" "downloads/bin/gpio_shutdown_trigger"
@@ -186,8 +186,8 @@ jobs:
           Executables:
           - sol-server.zip
           - sol-software
-          - sol-update
-          - sol-update-manager
+          - sol-update-gui
+          - sol-update-backend
           - mass_gadget_watchdog
           - update_version_info
           - gpio_shutdown_trigger
