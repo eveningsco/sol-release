@@ -2,7 +2,7 @@ name: Create Combined Release
 
 on:
   repository_dispatch:
-    types: [new_sol_release, new_sol_utils_release]
+    types: [sol_software_release, sol_utils_release, sol_server_release]
   workflow_dispatch:  # Allow manual triggering
 
 jobs:
