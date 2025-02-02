@@ -155,6 +155,7 @@ jobs:
         download_asset "sol-server-logrotate" "downloads/logrotate/sol-server-logrotate"
         download_asset "sol-software-logrotate" "downloads/logrotate/sol-software-logrotate"
         download_asset "mass-gadget-watchdog-logrotate" "downloads/logrotate/mass-gadget-watchdog-logrotate"
+        download_asset "sol-update-manager-logrotate" "downloads/logrotate/sol-update-manager-logrotate"
 
     - name: List downloaded files
       run: |
@@ -239,6 +240,7 @@ jobs:
           - sol-server-logrotate
           - sol-software-logrotate
           - mass-gadget-watchdog-logrotate
+          - sol-update-manager-logrotate
         draft: false
         prerelease: true
     
