@@ -64,9 +64,9 @@ jobs:
         download_asset "sol-connectivity.timer" "downloads/services/sol-connectivity.timer"
         download_asset "sol-server.service" "downloads/services/sol-server.service"
 
-    - name: Download latest sol-software
+    - name: Download latest sol_software
       run: |
-        echo "Fetching sol-software release..."
+        echo "Fetching sol_software release..."
         RELEASE_INFO=$(curl -L \
           -H "Accept: application/vnd.github+json" \
           -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
@@ -96,10 +96,10 @@ jobs:
         }
         
         # Download executable
-        download_asset "sol-software" "downloads/bin/sol-software"
+        download_asset "sol_software" "downloads/bin/sol_software"
         
         # Download service file
-        download_asset "sol-software.service" "downloads/services/sol-software.service"
+        download_asset "sol_software.service" "downloads/services/sol_software.service"
 
     - name: Download latest sol-utils files
       run: |
@@ -134,8 +134,8 @@ jobs:
         }
         
         # Download executables
-        download_asset "sol-update-gui" "downloads/bin/sol-update-gui"
-        download_asset "sol-update-backend" "downloads/bin/sol-update-backend"
+        download_asset "sol_update_gui" "downloads/bin/sol_update_gui"
+        download_asset "sol_update_backend" "downloads/bin/sol_update_backend"
         download_asset "mass_gadget_watchdog" "downloads/bin/mass_gadget_watchdog"
         download_asset "update_version_info" "downloads/bin/update_version_info"
         download_asset "gpio_shutdown_trigger" "downloads/bin/gpio_shutdown_trigger"
@@ -156,9 +156,9 @@ jobs:
         # Download logrotate files
         download_asset "mp2624-logrotate" "downloads/logrotate/mp2624-logrotate"
         download_asset "sol-server-logrotate" "downloads/logrotate/sol-server-logrotate"
-        download_asset "sol-software-logrotate" "downloads/logrotate/sol-software-logrotate"
-        download_asset "mass-gadget-watchdog-logrotate" "downloads/logrotate/mass-gadget-watchdog-logrotate"
-        download_asset "sol-update-manager-logrotate" "downloads/logrotate/sol-update-manager-logrotate"
+        download_asset "sol_software-logrotate" "downloads/logrotate/sol_software-logrotate"
+        download_asset "mass_gadget_watchdog-logrotate" "downloads/logrotate/mass_gadget_watchdog-logrotate"
+        download_asset "sol_update_manager-logrotate" "downloads/logrotate/sol_update_manager-logrotate"
 
     - name: List downloaded files
       run: |
@@ -217,9 +217,9 @@ jobs:
           This release includes:
           Executables:
           - sol-server.zip
-          - sol-software
-          - sol-update-gui
-          - sol-update-backend
+          - sol_software
+          - sol_update_gui
+          - sol_update_backend
           - mass_gadget_watchdog
           - update_version_info
           - gpio_shutdown_trigger
@@ -229,7 +229,7 @@ jobs:
           
           Service Files:
           - sol-server.service
-          - sol-software.service
+          - sol_software.service
           - sol-connectivity.service
           - sol-connectivity.timer
           - mass_gadget_watchdog.service
@@ -244,9 +244,9 @@ jobs:
           Logrotate Files:
           - mp2624-logrotate
           - sol-server-logrotate
-          - sol-software-logrotate
-          - mass-gadget-watchdog-logrotate
-          - sol-update-manager-logrotate
+          - sol_software-logrotate
+          - mass_gadget_watchdog-logrotate
+          - sol_update_manager-logrotate
         draft: false
         prerelease: true
     
