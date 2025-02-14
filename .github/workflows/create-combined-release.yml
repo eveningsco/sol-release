@@ -141,8 +141,10 @@ jobs:
         download_asset "gpio_shutdown_trigger" "downloads/bin/gpio_shutdown_trigger"
         download_asset "off_mass_gadget" "downloads/bin/off_mass_gadget"
         download_asset "on_mass_gadget" "downloads/bin/on_mass_gadget"
+        download_asset "mp2624" "downloads/bin/mp2624"
         
         # Download service files
+        download_asset "mp2624_watchdog.service" "downloads/services/mp2624_watchdog.service"
         download_asset "mass_gadget_watchdog.service" "downloads/services/mass_gadget_watchdog.service"
         download_asset "update_version_info.service" "downloads/services/update_version_info.service"
         download_asset "fbcp.service" "downloads/services/fbcp.service"
@@ -152,6 +154,7 @@ jobs:
         download_asset "filebeat.yml" "downloads/config/filebeat.yml"
         
         # Download logrotate files
+        download_asset "mp2624-logrotate" "downloads/logrotate/mp2624-logrotate"
         download_asset "sol-server-logrotate" "downloads/logrotate/sol-server-logrotate"
         download_asset "sol_software-logrotate" "downloads/logrotate/sol_software-logrotate"
         download_asset "mass_gadget_watchdog-logrotate" "downloads/logrotate/mass_gadget_watchdog-logrotate"
@@ -222,6 +225,7 @@ jobs:
           - gpio_shutdown_trigger
           - off_mass_gadget
           - on_mass_gadget
+          - mp2624
           
           Service Files:
           - sol-server.service
@@ -232,11 +236,13 @@ jobs:
           - update_version_info.service
           - filebeat.service
           - fbcp.service
-          
+          - mp2624_watchdog.service
+
           Config Files:
           - filebeat.yml
           
           Logrotate Files:
+          - mp2624-logrotate
           - sol-server-logrotate
           - sol_software-logrotate
           - mass_gadget_watchdog-logrotate
