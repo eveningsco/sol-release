@@ -136,6 +136,8 @@ jobs:
         # Download executables
         download_asset "sol_update_gui" "downloads/bin/sol_update_gui"
         download_asset "sol_update_backend" "downloads/bin/sol_update_backend"
+        download_asset "sol_update_manager" "downloads/bin/sol_update_manager"
+        download_asset "sol_update_manager_gui" "downloads/bin/sol_update_manager_gui"
         download_asset "mass_gadget_watchdog" "downloads/bin/mass_gadget_watchdog"
         download_asset "update_version_info" "downloads/bin/update_version_info"
         download_asset "gpio_shutdown_trigger" "downloads/bin/gpio_shutdown_trigger"
@@ -149,6 +151,7 @@ jobs:
         download_asset "update_version_info.service" "downloads/services/update_version_info.service"
         download_asset "fbcp.service" "downloads/services/fbcp.service"
         download_asset "filebeat.service" "downloads/services/filebeat.service"
+        download_asset "sol_update_manager.service" "downloads/services/sol_update_manager.service"
         
         # Download config files
         download_asset "filebeat.yml" "downloads/config/filebeat.yml"
@@ -220,6 +223,8 @@ jobs:
           - sol_software
           - sol_update_gui
           - sol_update_backend
+          - sol_update_manager
+          - sol_update_manager_gui
           - mass_gadget_watchdog
           - update_version_info
           - gpio_shutdown_trigger
