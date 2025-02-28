@@ -149,6 +149,7 @@ jobs:
         download_asset "mp2624_watchdog.service" "downloads/services/mp2624_watchdog.service"
         download_asset "mass_gadget_watchdog.service" "downloads/services/mass_gadget_watchdog.service"
         download_asset "update_version_info.service" "downloads/services/update_version_info.service"
+        download_asset "update_version_info.timer" "downloads/services/update_version_info.timer"
         download_asset "fbcp.service" "downloads/services/fbcp.service"
         download_asset "filebeat.service" "downloads/services/filebeat.service"
         download_asset "sol_update_manager.service" "downloads/services/sol_update_manager.service"
@@ -239,9 +240,11 @@ jobs:
           - sol-connectivity.timer
           - mass_gadget_watchdog.service
           - update_version_info.service
+          - update_version_info.timer
           - filebeat.service
           - fbcp.service
           - mp2624_watchdog.service
+          - sol_update_manager.service
 
           Config Files:
           - filebeat.yml
