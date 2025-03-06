@@ -144,6 +144,7 @@ jobs:
         download_asset "off_mass_gadget" "downloads/bin/off_mass_gadget"
         download_asset "on_mass_gadget" "downloads/bin/on_mass_gadget"
         download_asset "expand_exfat" "downloads/bin/expand_exfat"
+        download_asset "provision" "downloads/bin/provision"
         download_asset "mp2624" "downloads/bin/mp2624"
         
         # Download service files
@@ -233,6 +234,7 @@ jobs:
           - off_mass_gadget
           - on_mass_gadget
           - expand_exfat
+          - provision
           - mp2624
           
           Service Files:
