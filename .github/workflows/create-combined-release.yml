@@ -18,6 +18,50 @@ jobs:
       id: date
       run: echo "date=$(date +'%m%d%Y_%H-%M-%S')" >> $GITHUB_OUTPUT
     
+    - name: Capture dispatch metadata
+      id: metadata
+      run: |
+        # Initialize metadata variables
+        echo "has_metadata=false" >> $GITHUB_OUTPUT
+        
+        # Check if we have client_payload from repository dispatch
+        if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+          echo "Event type: ${{ github.event.action }}"
+          
+          # Try to extract metadata from client_payload
+          if [ -n '${{ toJson(github.event.client_payload) }}' ] && [ '${{ toJson(github.event.client_payload) }}' != '{}' ]; then
+            echo "has_metadata=true" >> $GITHUB_OUTPUT
+            
+            # Store metadata for each component
+            case "${{ github.event.action }}" in
+              sol_software_release)
+                echo "sol_software_branch=${{ github.event.client_payload.branch }}" >> $GITHUB_OUTPUT
+                echo "sol_software_commit=${{ github.event.client_payload.commit_sha }}" >> $GITHUB_OUTPUT
+                echo "sol_software_tag=${{ github.event.client_payload.tag_name }}" >> $GITHUB_OUTPUT
+                echo "sol_software_url=${{ github.event.client_payload.release_url }}" >> $GITHUB_OUTPUT
+                ;;
+              sol_utils_release)
+                echo "sol_utils_branch=${{ github.event.client_payload.branch }}" >> $GITHUB_OUTPUT
+                echo "sol_utils_commit=${{ github.event.client_payload.commit_sha }}" >> $GITHUB_OUTPUT
+                echo "sol_utils_tag=${{ github.event.client_payload.tag_name }}" >> $GITHUB_OUTPUT
+                echo "sol_utils_url=${{ github.event.client_payload.release_url }}" >> $GITHUB_OUTPUT
+                ;;
+              sol_server_release)
+                echo "sol_server_branch=${{ github.event.client_payload.branch }}" >> $GITHUB_OUTPUT
+                echo "sol_server_commit=${{ github.event.client_payload.commit_sha }}" >> $GITHUB_OUTPUT
+                echo "sol_server_tag=${{ github.event.client_payload.tag_name }}" >> $GITHUB_OUTPUT
+                echo "sol_server_url=${{ github.event.client_payload.release_url }}" >> $GITHUB_OUTPUT
+                ;;
+            esac
+            
+            # Debug output
+            echo "Captured metadata from ${{ github.event.action }}:"
+            echo "  Branch: ${{ github.event.client_payload.branch }}"
+            echo "  Commit: ${{ github.event.client_payload.commit_sha }}"
+            echo "  Tag: ${{ github.event.client_payload.tag_name }}"
+          fi
+        fi
+    
     - name: Create working directory structure
       run: |
         mkdir -p downloads/bin
@@ -171,6 +215,77 @@ jobs:
         echo "Contents of downloads directory:"
         ls -lR downloads/
     
+    - name: Create metadata file
+      if: success()
+      run: |
+        # Create metadata.json file
+        cat > downloads/metadata.json << EOF
+        {
+          "release_version": "Release-${{ steps.date.outputs.date }}",
+          "build_date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+          "triggered_by": "${{ github.event_name }}",
+          "components": {
+        EOF
+        
+        # Add component metadata if available
+        if [ "${{ steps.metadata.outputs.has_metadata }}" = "true" ]; then
+          # Add sol-software metadata if available
+          if [ -n "${{ steps.metadata.outputs.sol_software_branch }}" ]; then
+            cat >> downloads/metadata.json << EOF
+            "sol-software": {
+              "branch": "${{ steps.metadata.outputs.sol_software_branch }}",
+              "commit": "${{ steps.metadata.outputs.sol_software_commit }}",
+              "tag": "${{ steps.metadata.outputs.sol_software_tag }}",
+              "release_url": "${{ steps.metadata.outputs.sol_software_url }}"
+            },
+        EOF
+          fi
+          
+          # Add sol-utils metadata if available
+          if [ -n "${{ steps.metadata.outputs.sol_utils_branch }}" ]; then
+            cat >> downloads/metadata.json << EOF
+            "sol-utils": {
+              "branch": "${{ steps.metadata.outputs.sol_utils_branch }}",
+              "commit": "${{ steps.metadata.outputs.sol_utils_commit }}",
+              "tag": "${{ steps.metadata.outputs.sol_utils_tag }}",
+              "release_url": "${{ steps.metadata.outputs.sol_utils_url }}"
+            },
+        EOF
+          fi
+          
+          # Add sol-server metadata if available
+          if [ -n "${{ steps.metadata.outputs.sol_server_branch }}" ]; then
+            cat >> downloads/metadata.json << EOF
+            "sol-server": {
+              "branch": "${{ steps.metadata.outputs.sol_server_branch }}",
+              "commit": "${{ steps.metadata.outputs.sol_server_commit }}",
+              "tag": "${{ steps.metadata.outputs.sol_server_tag }}",
+              "release_url": "${{ steps.metadata.outputs.sol_server_url }}"
+            },
+        EOF
+          fi
+        else
+          # No metadata available, just note which components are included
+          cat >> downloads/metadata.json << EOF
+            "sol-software": { "included": true },
+            "sol-utils": { "included": true },
+            "sol-server": { "included": true },
+        EOF
+        fi
+        
+        # Close the JSON (remove trailing comma and add closing braces)
+        sed -i '$ s/,$//' downloads/metadata.json
+        cat >> downloads/metadata.json << EOF
+          }
+        }
+        EOF
+        
+        # Pretty print the JSON
+        jq . downloads/metadata.json > downloads/metadata.json.tmp && mv downloads/metadata.json.tmp downloads/metadata.json
+        
+        echo "Created metadata.json:"
+        cat downloads/metadata.json
+    
     - name: Create ZIP file
       if: success()
       run: |
@@ -207,6 +322,83 @@ jobs:
           done
         fi
 
+    - name: Generate release body
+      id: release_body
+      run: |
+        # Start building release body
+        BODY="Combined SOL release package"
+        BODY="${BODY}\nBuild date: ${{ steps.date.outputs.date }}"
+        
+        # Add component source information if metadata is available
+        if [ "${{ steps.metadata.outputs.has_metadata }}" = "true" ]; then
+          BODY="${BODY}\n\n## Component Sources"
+          
+          # Add sol-software info if available
+          if [ -n "${{ steps.metadata.outputs.sol_software_branch }}" ]; then
+            BODY="${BODY}\n- **sol-software** ${{ steps.metadata.outputs.sol_software_tag }} "
+            BODY="${BODY}(branch: ${{ steps.metadata.outputs.sol_software_branch }}, "
+            BODY="${BODY}commit: ${{ steps.metadata.outputs.sol_software_commit }})"
+          fi
+          
+          # Add sol-utils info if available
+          if [ -n "${{ steps.metadata.outputs.sol_utils_branch }}" ]; then
+            BODY="${BODY}\n- **sol-utils** ${{ steps.metadata.outputs.sol_utils_tag }} "
+            BODY="${BODY}(branch: ${{ steps.metadata.outputs.sol_utils_branch }}, "
+            BODY="${BODY}commit: ${{ steps.metadata.outputs.sol_utils_commit }})"
+          fi
+          
+          # Add sol-server info if available
+          if [ -n "${{ steps.metadata.outputs.sol_server_branch }}" ]; then
+            BODY="${BODY}\n- **sol-server** ${{ steps.metadata.outputs.sol_server_tag }} "
+            BODY="${BODY}(branch: ${{ steps.metadata.outputs.sol_server_branch }}, "
+            BODY="${BODY}commit: ${{ steps.metadata.outputs.sol_server_commit }})"
+          fi
+        fi
+        
+        # Add file listing
+        BODY="${BODY}\n\n## Included Files"
+        BODY="${BODY}\n\n### Executables:"
+        BODY="${BODY}\n- sol-server.zip"
+        BODY="${BODY}\n- sol_software"
+        BODY="${BODY}\n- sol_update_gui"
+        BODY="${BODY}\n- sol_update_backend"
+        BODY="${BODY}\n- sol_update_manager"
+        BODY="${BODY}\n- sol_update_manager_gui"
+        BODY="${BODY}\n- mass_gadget_watchdog"
+        BODY="${BODY}\n- update_version_info"
+        BODY="${BODY}\n- gpio_shutdown_trigger"
+        BODY="${BODY}\n- off_mass_gadget"
+        BODY="${BODY}\n- on_mass_gadget"
+        BODY="${BODY}\n- expand_exfat"
+        BODY="${BODY}\n- provision"
+        BODY="${BODY}\n- mp2624"
+        
+        BODY="${BODY}\n\n### Service Files:"
+        BODY="${BODY}\n- sol-server.service"
+        BODY="${BODY}\n- sol_software.service"
+        BODY="${BODY}\n- sol-connectivity.service"
+        BODY="${BODY}\n- sol-connectivity.timer"
+        BODY="${BODY}\n- mass_gadget_watchdog.service"
+        BODY="${BODY}\n- update_version_info.service"
+        BODY="${BODY}\n- update_version_info.timer"
+        BODY="${BODY}\n- filebeat.service"
+        BODY="${BODY}\n- fbcp.service"
+        BODY="${BODY}\n- mp2624_watchdog.service"
+        BODY="${BODY}\n- sol_update_manager.service"
+        
+        BODY="${BODY}\n\n### Config Files:"
+        BODY="${BODY}\n- filebeat.yml"
+        
+        BODY="${BODY}\n\n### Logrotate Files:"
+        BODY="${BODY}\n- mp2624-logrotate"
+        BODY="${BODY}\n- sol-server-logrotate"
+        BODY="${BODY}\n- sol_software-logrotate"
+        BODY="${BODY}\n- mass_gadget_watchdog-logrotate"
+        BODY="${BODY}\n- sol_update_manager-logrotate"
+        
+        # Save to file to handle multiline properly
+        echo -e "$BODY" > release_body.txt
+        
     - name: Create Release
       if: success()
       id: create_release
@@ -216,49 +408,7 @@ jobs:
       with:
         tag_name: Release-${{ steps.date.outputs.date }}
         release_name: Combined Release ${{ steps.date.outputs.date }}
-        body: |
-          Combined SOL release package
-          Build date: ${{ steps.date.outputs.date }}
-          
-          This release includes:
-          Executables:
-          - sol-server.zip
-          - sol_software
-          - sol_update_gui
-          - sol_update_backend
-          - sol_update_manager
-          - sol_update_manager_gui
-          - mass_gadget_watchdog
-          - update_version_info
-          - gpio_shutdown_trigger
-          - off_mass_gadget
-          - on_mass_gadget
-          - expand_exfat
-          - provision
-          - mp2624
-          
-          Service Files:
-          - sol-server.service
-          - sol_software.service
-          - sol-connectivity.service
-          - sol-connectivity.timer
-          - mass_gadget_watchdog.service
-          - update_version_info.service
-          - update_version_info.timer
-          - filebeat.service
-          - fbcp.service
-          - mp2624_watchdog.service
-          - sol_update_manager.service
-
-          Config Files:
-          - filebeat.yml
-          
-          Logrotate Files:
-          - mp2624-logrotate
-          - sol-server-logrotate
-          - sol_software-logrotate
-          - mass_gadget_watchdog-logrotate
-          - sol_update_manager-logrotate
+        body_path: release_body.txt
         draft: false
         prerelease: true
     
