@@ -11,6 +11,77 @@ SOL is a hardware/software project for an audio recording device based on Raspbe
 - KiCad PCB design files (`/sol-pcb/`)
 - Release orchestration (`/sol-release/`)
 
+## SOL Release Repository
+
+This repository orchestrates combined releases for the entire SOL ecosystem. It aggregates build artifacts from individual component repositories and creates unified release packages that can be deployed to SOL devices.
+
+### Release Process Overview
+
+1. **Triggering Mechanisms**:
+   - **Automatic**: When any component repository (sol-software, sol-server, sol-utils) creates a release, it triggers a repository dispatch event
+   - **Manual**: The workflow can be manually triggered via GitHub Actions UI
+
+2. **Component Integration**:
+   - Downloads latest releases from all three component repositories
+   - Uses GitHub API with authentication token to access private repositories
+   - Preserves executable permissions on binaries
+
+3. **Artifact Aggregation**:
+   - Creates organized directory structure:
+     - `/bin/` - All executable files
+     - `/services/` - SystemD service and timer files
+     - `/config/` - Configuration files (filebeat.yml)
+     - `/logrotate/` - Log rotation configurations
+   - Combines component metadata into unified `metadata.json`
+
+4. **Release Package Creation**:
+   - Generates timestamped ZIP file containing all artifacts
+   - Creates pre-release on GitHub with detailed release notes
+   - Automatically cleans up old pre-releases (keeps newest 5)
+
+### Workflow Configuration
+
+The release workflow is defined in `.github/workflows/create-combined-release.yml`:
+
+```yaml
+on:
+  repository_dispatch:
+    types: [sol_software_release, sol_utils_release, sol_server_release]
+  workflow_dispatch:  # Allow manual triggering
+```
+
+### Repository Dispatch Integration
+
+Component repositories trigger combined releases by sending repository dispatch events:
+
+```yaml
+# Example from component repository workflow
+- name: Trigger combined release
+  uses: peter-evans/repository-dispatch@v2
+  with:
+    token: ${{ secrets.RELEASE_TOKEN }}
+    repository: eveningsco/sol-release
+    event-type: sol_software_release
+    client-payload: '{"branch": "${{ github.ref_name }}", "commit_sha": "${{ github.sha }}", "tag_name": "${{ steps.create_release.outputs.tag }}", "release_url": "${{ steps.create_release.outputs.html_url }}"}'
+```
+
+### Metadata Tracking
+
+Each component can include a `metadata.json` in its release assets containing:
+- Branch name
+- Commit SHA
+- Tag name
+- PR information (if applicable)
+- Build timestamps
+
+The combined release workflow merges these into a comprehensive metadata file.
+
+### Security Considerations
+
+- Uses `RELEASE_TOKEN` secret for cross-repository authentication
+- Workflow has write permissions for creating releases
+- All downloaded artifacts are validated before packaging
+
 ## Common Commands
 
 ### SOL Software (Python)
@@ -243,6 +314,82 @@ Versions are automatically generated in `SOL.spec`:
   - `mass_gadget_watchdog-logrotate`
   - `sol_update_manager-logrotate`
 
+## Release Artifacts
+
+### Combined Release Package Structure
+```
+sol-release-MMDDYYYY_HH-MM-SS.zip
+├── bin/
+│   ├── sol-server.zip              # Bun compiled server application
+│   ├── sol_software                # Main SOL device application
+│   ├── sol_update_gui              # Update GUI interface
+│   ├── sol_update_backend          # Update backend service
+│   ├── sol_update_manager          # Automatic update checker
+│   ├── sol_update_manager_gui      # Update manager GUI
+│   ├── mass_gadget_watchdog        # USB gadget monitor
+│   ├── update_version_info         # Version info updater
+│   ├── gpio_shutdown_trigger       # GPIO shutdown handler
+│   ├── off_mass_gadget            # Disable USB mass storage
+│   ├── on_mass_gadget             # Enable USB mass storage
+│   ├── expand_exfat               # ExFAT partition expander
+│   ├── provision                  # System provisioning script
+│   └── mp2624                     # Battery charger utility
+├── services/
+│   ├── sol-server.service
+│   ├── sol_software.service
+│   ├── sol-connectivity.service
+│   ├── sol-connectivity.timer
+│   ├── mass_gadget_watchdog.service
+│   ├── update_version_info.service
+│   ├── update_version_info.timer
+│   ├── filebeat.service
+│   ├── fbcp.service
+│   ├── mp2624_watchdog.service
+│   └── sol_update_manager.service
+├── config/
+│   └── filebeat.yml
+├── logrotate/
+│   ├── mp2624-logrotate
+│   ├── sol-server-logrotate
+│   ├── sol_software-logrotate
+│   ├── mass_gadget_watchdog-logrotate
+│   └── sol_update_manager-logrotate
+└── metadata.json                   # Combined release metadata
+```
+
+### Release Naming Convention
+- Format: `Release-MMDDYYYY_HH-MM-SS`
+- Example: `Release-01252025_14-30-45`
+- All releases are marked as pre-releases
+- Automatic cleanup keeps only the 5 most recent releases
+
+### Component Download Process
+
+The workflow downloads artifacts from each component's latest GitHub release:
+
+1. **sol-server**:
+   - `sol-server.zip` - Compiled Bun application
+   - Service files for server and connectivity monitoring
+   - Optional metadata.json
+
+2. **sol-software**:
+   - `sol_software` - PyInstaller-built executable
+   - `sol_software.service` - SystemD service file
+   - Optional metadata.json
+
+3. **sol-utils**:
+   - Multiple PyInstaller-built executables
+   - Service files for various system utilities
+   - Configuration files (filebeat.yml)
+   - Logrotate configurations
+   - Optional metadata.json
+
+### Error Handling
+
+- If any required artifact is missing, the workflow fails
+- Optional files (like metadata.json) don't cause failures if absent
+- Download failures are logged with asset IDs for debugging
+
 ## Update Management
 
 The SOL device uses `sol-update` to check for and install updates from GitHub releases.
@@ -264,6 +411,67 @@ To pull development (prerelease) updates instead of only stable releases:
    - If dates are identical, prefers stable release
 
 3. The update manager (`sol-utils/sol_update_manager.py`) will automatically check for updates based on this setting
+
+## Workflow Development
+
+### Testing the Release Workflow
+
+1. **Manual Trigger**:
+   ```bash
+   # Via GitHub UI: Actions tab → Create Combined Release → Run workflow
+   ```
+
+2. **Simulating Repository Dispatch**:
+   ```bash
+   # Using GitHub CLI
+   gh workflow run create-combined-release.yml
+   ```
+
+3. **Local Testing**:
+   - Fork the repository for testing
+   - Update workflow to use your fork's repositories
+   - Use `act` tool for local GitHub Actions testing
+
+### Debugging Release Issues
+
+1. **Check Workflow Logs**:
+   - Each step outputs detailed information
+   - Asset IDs are logged for download verification
+   - File listings show what was packaged
+
+2. **Common Issues**:
+   - **Missing RELEASE_TOKEN**: Ensure secret is configured
+   - **Asset not found**: Component release may be missing required files
+   - **Permission denied**: Check token has appropriate repository access
+   - **Workflow not triggering**: Verify repository dispatch event types match
+
+3. **Metadata Validation**:
+   ```bash
+   # Check combined metadata structure
+   jq . downloads/metadata.json
+   ```
+
+### Adding New Components
+
+To add a new component to the combined release:
+
+1. Add download step in workflow:
+   ```yaml
+   - name: Download latest sol-new-component
+     run: |
+       # Copy existing download pattern
+       # Update repository name and asset lists
+   ```
+
+2. Update repository dispatch triggers:
+   ```yaml
+   on:
+     repository_dispatch:
+       types: [..., sol_new_component_release]
+   ```
+
+3. Add to metadata merging logic
+4. Update release body generation
 
 ### Update System Architecture
 - **Version Checking**: Periodic checks against GitHub releases API

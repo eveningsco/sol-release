@@ -1,0 +1,224 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1650">
+  <!-- White background -->
+  <rect x="0" y="0" width="1600" height="1600" fill="white"/>
+  
+  <defs>
+    <style>
+      .repo-box { fill: #e8f4f8; stroke: #0969da; stroke-width: 2; }
+      .workflow-box { fill: #fff3cd; stroke: #f39c12; stroke-width: 2; }
+      .action-box { fill: #d4edda; stroke: #27ae60; stroke-width: 2; }
+      .release-box { fill: #f8d7da; stroke: #e74c3c; stroke-width: 2; }
+      .arrow { fill: none; stroke: #333; stroke-width: 2; marker-end: url(#arrowhead); }
+      .text { font-family: Arial, sans-serif; font-size: 14px; text-anchor: middle; }
+      .title { font-size: 18px; font-weight: bold; }
+      .small-text { font-size: 12px; }
+      .metadata-box { fill: #e7e7ff; stroke: #6366f1; stroke-width: 2; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#333"/>
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="800" y="40" class="text title">SOL Release Orchestration Architecture</text>
+
+  <!-- Component Repositories -->
+  <g id="repositories">
+    <!-- sol-software -->
+    <rect x="50" y="100" width="220" height="140" class="repo-box" rx="5"/>
+    <text x="160" y="130" class="text title">sol-software</text>
+    <text x="160" y="158" class="text small-text">Python Application</text>
+    <text x="160" y="180" class="text small-text">• SOL.py</text>
+    <text x="160" y="202" class="text small-text">• SOLUI.py</text>
+    <text x="160" y="224" class="text small-text">• Services</text>
+
+    <!-- sol-server -->
+    <rect x="320" y="100" width="220" height="140" class="repo-box" rx="5"/>
+    <text x="430" y="130" class="text title">sol-server</text>
+    <text x="430" y="158" class="text small-text">Bun/Node.js Server</text>
+    <text x="430" y="180" class="text small-text">• Web Interface</text>
+    <text x="430" y="202" class="text small-text">• API Endpoints</text>
+    <text x="430" y="224" class="text small-text">• WebSockets</text>
+
+    <!-- sol-utils -->
+    <rect x="590" y="100" width="220" height="140" class="repo-box" rx="5"/>
+    <text x="700" y="130" class="text title">sol-utils</text>
+    <text x="700" y="158" class="text small-text">System Utilities</text>
+    <text x="700" y="180" class="text small-text">• Update Manager</text>
+    <text x="700" y="202" class="text small-text">• USB Gadget</text>
+    <text x="700" y="224" class="text small-text">• Provisioning</text>
+  </g>
+
+  <!-- Repository Dispatch Events -->
+  <g id="dispatch-events">
+    <rect x="860" y="100" width="280" height="140" class="metadata-box" rx="5"/>
+    <text x="1000" y="130" class="text title">Repository Dispatch</text>
+    <text x="1000" y="158" class="text small-text">Event Types:</text>
+    <text x="1000" y="180" class="text small-text">• sol_software_release</text>
+    <text x="1000" y="202" class="text small-text">• sol_server_release</text>
+    <text x="1000" y="224" class="text small-text">• sol_utils_release</text>
+  </g>
+
+  <!-- Arrows from repos to dispatch -->
+  <path class="arrow" d="M 270 170 L 850 170"/>
+  <path class="arrow" d="M 540 170 L 850 170"/>
+  <path class="arrow" d="M 810 170 L 850 170"/>
+
+  <!-- GitHub Actions Workflow -->
+  <rect x="120" y="320" width="950" height="120" class="workflow-box" rx="5"/>
+  <text x="595" y="355" class="text title">GitHub Actions Workflow</text>
+  <text x="595" y="385" class="text">create-combined-release.yml</text>
+  <text x="595" y="415" class="text small-text">Triggered by: Repository Dispatch or Manual workflow_dispatch</text>
+
+  <!-- Arrow from dispatch to workflow -->
+  <path class="arrow" d="M 1000 240 L 1000 310"/>
+
+  <!-- Workflow Steps -->
+  <g id="workflow-steps">
+    <!-- Download Latest Releases -->
+    <rect x="50" y="520" width="300" height="140" class="action-box" rx="5"/>
+    <text x="200" y="550" class="text title">Download Latest Releases</text>
+    <text x="200" y="578" class="text small-text">• Fetch from GitHub API</text>
+    <text x="200" y="602" class="text small-text">• Download all assets</text>
+    <text x="200" y="626" class="text small-text">• Preserve permissions</text>
+    <text x="200" y="650" class="text small-text">• Validate artifacts</text>
+
+    <!-- Organize Artifacts -->
+    <rect x="400" y="520" width="300" height="140" class="action-box" rx="5"/>
+    <text x="550" y="550" class="text title">Organize Artifacts</text>
+    <text x="550" y="578" class="text small-text">• /bin/ - Executables</text>
+    <text x="550" y="602" class="text small-text">• /services/ - SystemD files</text>
+    <text x="550" y="626" class="text small-text">• /config/ - Configurations</text>
+    <text x="550" y="650" class="text small-text">• /logrotate/ - Log configs</text>
+
+    <!-- Create Metadata -->
+    <rect x="750" y="520" width="300" height="140" class="action-box" rx="5"/>
+    <text x="900" y="550" class="text title">Create Metadata</text>
+    <text x="900" y="578" class="text small-text">• Merge component metadata</text>
+    <text x="900" y="602" class="text small-text">• Add build information</text>
+    <text x="900" y="626" class="text small-text">• Include commit SHAs</text>
+    <text x="900" y="650" class="text small-text">• Track PR information</text>
+  </g>
+
+  <!-- Arrows from workflow to steps -->
+  <path class="arrow" d="M 320 440 L 200 510"/>
+  <path class="arrow" d="M 595 440 L 550 510"/>
+  <path class="arrow" d="M 870 440 L 900 510"/>
+
+  <!-- Package Creation -->
+  <rect x="400" y="740" width="300" height="120" class="action-box" rx="5"/>
+  <text x="550" y="775" class="text title">Create Release Package</text>
+  <text x="550" y="805" class="text small-text">• ZIP all artifacts</text>
+  <text x="550" y="830" class="text small-text">• Name: sol-release-MMDDYYYY_HH-MM-SS.zip</text>
+
+  <!-- Arrows from steps to package -->
+  <path class="arrow" d="M 200 660 L 400 740"/>
+  <path class="arrow" d="M 550 660 L 550 730"/>
+  <path class="arrow" d="M 900 660 L 700 740"/>
+
+  <!-- GitHub Release -->
+  <rect x="400" y="940" width="300" height="140" class="release-box" rx="5"/>
+  <text x="550" y="975" class="text title">Create GitHub Release</text>
+  <text x="550" y="1005" class="text small-text">• Pre-release tag</text>
+  <text x="550" y="1030" class="text small-text">• Detailed release notes</text>
+  <text x="550" y="1055" class="text small-text">• Upload ZIP package</text>
+  <text x="550" y="1080" class="text small-text">• Cleanup old releases</text>
+
+  <!-- Arrow from package to release -->
+  <path class="arrow" d="M 550 860 L 550 930"/>
+
+  <!-- SOL Devices -->
+  <rect x="400" y="1160" width="300" height="120" class="repo-box" rx="5"/>
+  <text x="550" y="1195" class="text title">SOL Devices</text>
+  <text x="550" y="1225" class="text small-text">• sol_update_manager checks releases</text>
+  <text x="550" y="1255" class="text small-text">• Downloads and installs updates</text>
+
+  <!-- Arrow from release to devices -->
+  <path class="arrow" d="M 550 1080 L 550 1150"/>
+
+  <!-- Component Details -->
+  <g id="component-details">
+    <!-- Metadata structure -->
+    <rect x="1200" y="100" width="280" height="220" class="metadata-box" rx="5"/>
+    <text x="1340" y="130" class="text title">metadata.json</text>
+    <text x="1340" y="160" class="text small-text" text-anchor="middle">
+      <tspan x="1340" dy="0">{</tspan>
+      <tspan x="1340" dy="18">"release_version": "...",</tspan>
+      <tspan x="1340" dy="18">"build_date": "...",</tspan>
+      <tspan x="1340" dy="18">"components": {</tspan>
+      <tspan x="1350" dy="18">"sol-software": {...},</tspan>
+      <tspan x="1350" dy="18">"sol-server": {...},</tspan>
+      <tspan x="1350" dy="18">"sol-utils": {...}</tspan>
+      <tspan x="1340" dy="18">}</tspan>
+      <tspan x="1340" dy="18">}</tspan>
+    </text>
+
+    <!-- Release contents -->
+    <rect x="1200" y="370" width="280" height="320" class="action-box" rx="5"/>
+    <text x="1340" y="400" class="text title">Release Contents</text>
+    <text x="1340" y="430" class="text small-text" text-anchor="middle">
+      <tspan x="1340" dy="0">📦 sol-release-*.zip</tspan>
+      <tspan x="1320" dy="25" text-anchor="start">├── bin/</tspan>
+      <tspan x="1335" dy="18" text-anchor="start">│   ├── sol-server.zip</tspan>
+      <tspan x="1335" dy="18" text-anchor="start">│   ├── sol_software</tspan>
+      <tspan x="1335" dy="18" text-anchor="start">│   ├── sol_update_*</tspan>
+      <tspan x="1335" dy="18" text-anchor="start">│   └── ...</tspan>
+      <tspan x="1320" dy="25" text-anchor="start">├── services/</tspan>
+      <tspan x="1335" dy="18" text-anchor="start">│   └── *.service</tspan>
+      <tspan x="1320" dy="25" text-anchor="start">├── config/</tspan>
+      <tspan x="1335" dy="18" text-anchor="start">│   └── filebeat.yml</tspan>
+      <tspan x="1320" dy="25" text-anchor="start">├── logrotate/</tspan>
+      <tspan x="1335" dy="18" text-anchor="start">│   └── *-logrotate</tspan>
+      <tspan x="1320" dy="25" text-anchor="start">└── metadata.json</tspan>
+    </text>
+
+    <!-- Automation features -->
+    <rect x="1200" y="740" width="280" height="160" class="workflow-box" rx="5"/>
+    <text x="1340" y="770" class="text title">Automation Features</text>
+    <text x="1340" y="800" class="text small-text" text-anchor="middle">
+      <tspan x="1340" dy="0">• Automatic triggering</tspan>
+      <tspan x="1340" dy="22">• Cross-repo authentication</tspan>
+      <tspan x="1340" dy="22">• Pre-release management</tspan>
+      <tspan x="1340" dy="22">• Old release cleanup</tspan>
+      <tspan x="1340" dy="22">• Error handling</tspan>
+    </text>
+  </g>
+
+  <!-- Hardware Layer -->
+  <g id="hardware-layer">
+    <rect x="80" y="1350" width="1400" height="180" class="metadata-box" rx="5"/>
+    <text x="780" y="1380" class="text title">Hardware Layer</text>
+    <text x="780" y="1410" class="text small-text">Components:</text>
+    <text x="300" y="1440" class="text small-text" text-anchor="start">• Raspberry Pi CM4</text>
+    <text x="300" y="1465" class="text small-text" text-anchor="start">• HiFiBerry DAC+ ADC</text>
+    <text x="300" y="1490" class="text small-text" text-anchor="start">• Adafruit miniTFT (320x240)</text>
+    <text x="600" y="1440" class="text small-text" text-anchor="start">• Custom PCB with MP2624 (Battery)</text>
+    <text x="600" y="1465" class="text small-text" text-anchor="start">• MCP3021 ADC (Battery Monitor)</text>
+    <text x="600" y="1490" class="text small-text" text-anchor="start">• PiSugar Power Management</text>
+    <text x="1000" y="1440" class="text small-text" text-anchor="start">• GPIO Buttons &amp; LEDs</text>
+    <text x="1000" y="1465" class="text small-text" text-anchor="start">• USB-C Connectivity</text>
+    <text x="1000" y="1490" class="text small-text" text-anchor="start">• SD Card Storage</text>
+  </g>
+  
+  <!-- Arrow from devices to hardware -->
+  <path class="arrow" d="M 550 1280 L 550 1340"/>
+  
+  <!-- Legend -->
+  <g id="legend" transform="translate(80, 1580)">
+    <text x="0" y="0" class="text title" text-anchor="start">Legend:</text>
+    <rect x="110" y="-18" width="150" height="30" class="repo-box"/>
+    <text x="180" y="0" class="text small-text" text-anchor="start">Component Repository</text>
+    
+    <rect x="350" y="-18" width="150" height="30" class="workflow-box"/>
+    <text x="410" y="0" class="text small-text" text-anchor="start">GitHub Actions</text>
+
+    <rect x="580" y="-18" width="150" height="30" class="action-box"/>
+    <text x="640" y="0" class="text small-text" text-anchor="start">Process Step</text>
+    
+    <rect x="810" y="-18" width="150" height="30" class="release-box"/>
+    <text x="870" y="0" class="text small-text" text-anchor="start">Release Output</text>
+    
+    <rect x="1040" y="-18" width="150" height="30" class="metadata-box"/>
+    <text x="1100" y="0" class="text small-text" text-anchor="start">Metadata/Config</text>
+  </g>
+</svg>
