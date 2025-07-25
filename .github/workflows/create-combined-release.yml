@@ -107,6 +107,19 @@ jobs:
         download_asset "sol-connectivity.service" "downloads/services/sol-connectivity.service"
         download_asset "sol-connectivity.timer" "downloads/services/sol-connectivity.timer"
         download_asset "sol-server.service" "downloads/services/sol-server.service"
+        
+        # Download metadata (optional - don't fail if not found)
+        METADATA_ID=$(echo "$RELEASE_INFO" | jq -r ".assets[] | select(.name==\"metadata.json\") | .id")
+        if [ -n "$METADATA_ID" ] && [ "$METADATA_ID" != "null" ]; then
+          echo "Downloading sol-server metadata.json"
+          curl -L \
+            -H "Accept: application/octet-stream" \
+            -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
+            "https://api.github.com/repos/eveningsco/sol-server/releases/assets/$METADATA_ID" \
+            -o "sol-server-metadata.json"
+        else
+          echo "No metadata.json found for sol-server"
+        fi
 
     - name: Download latest sol_software
       run: |
@@ -144,6 +157,19 @@ jobs:
         
         # Download service file
         download_asset "sol_software.service" "downloads/services/sol_software.service"
+        
+        # Download metadata (optional - don't fail if not found)
+        METADATA_ID=$(echo "$RELEASE_INFO" | jq -r ".assets[] | select(.name==\"metadata.json\") | .id")
+        if [ -n "$METADATA_ID" ] && [ "$METADATA_ID" != "null" ]; then
+          echo "Downloading sol-software metadata.json"
+          curl -L \
+            -H "Accept: application/octet-stream" \
+            -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
+            "https://api.github.com/repos/eveningsco/sol-software/releases/assets/$METADATA_ID" \
+            -o "sol-software-metadata.json"
+        else
+          echo "No metadata.json found for sol-software"
+        fi
 
     - name: Download latest sol-utils files
       run: |
@@ -209,81 +235,67 @@ jobs:
         download_asset "sol_software-logrotate" "downloads/logrotate/sol_software-logrotate"
         download_asset "mass_gadget_watchdog-logrotate" "downloads/logrotate/mass_gadget_watchdog-logrotate"
         download_asset "sol_update_manager-logrotate" "downloads/logrotate/sol_update_manager-logrotate"
+        
+        # Download metadata (optional - don't fail if not found)
+        METADATA_ID=$(echo "$RELEASE_INFO" | jq -r ".assets[] | select(.name==\"metadata.json\") | .id")
+        if [ -n "$METADATA_ID" ] && [ "$METADATA_ID" != "null" ]; then
+          echo "Downloading sol-utils metadata.json"
+          curl -L \
+            -H "Accept: application/octet-stream" \
+            -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
+            "https://api.github.com/repos/eveningsco/sol-utils/releases/assets/$METADATA_ID" \
+            -o "sol-utils-metadata.json"
+        else
+          echo "No metadata.json found for sol-utils"
+        fi
 
     - name: List downloaded files
       run: |
         echo "Contents of downloads directory:"
         ls -lR downloads/
     
-    - name: Create metadata file
+    - name: Create combined metadata file
       if: success()
       run: |
-        # Create metadata.json file
+        # Create base metadata structure
         cat > downloads/metadata.json << EOF
         {
           "release_version": "Release-${{ steps.date.outputs.date }}",
           "build_date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
           "triggered_by": "${{ github.event_name }}",
-          "components": {
-        EOF
-        
-        # Add component metadata if available
-        if [ "${{ steps.metadata.outputs.has_metadata }}" = "true" ]; then
-          # Add sol-software metadata if available
-          if [ -n "${{ steps.metadata.outputs.sol_software_branch }}" ]; then
-            cat >> downloads/metadata.json << EOF
-            "sol-software": {
-              "branch": "${{ steps.metadata.outputs.sol_software_branch }}",
-              "commit": "${{ steps.metadata.outputs.sol_software_commit }}",
-              "tag": "${{ steps.metadata.outputs.sol_software_tag }}",
-              "release_url": "${{ steps.metadata.outputs.sol_software_url }}"
-            },
-        EOF
-          fi
-          
-          # Add sol-utils metadata if available
-          if [ -n "${{ steps.metadata.outputs.sol_utils_branch }}" ]; then
-            cat >> downloads/metadata.json << EOF
-            "sol-utils": {
-              "branch": "${{ steps.metadata.outputs.sol_utils_branch }}",
-              "commit": "${{ steps.metadata.outputs.sol_utils_commit }}",
-              "tag": "${{ steps.metadata.outputs.sol_utils_tag }}",
-              "release_url": "${{ steps.metadata.outputs.sol_utils_url }}"
-            },
-        EOF
-          fi
-          
-          # Add sol-server metadata if available
-          if [ -n "${{ steps.metadata.outputs.sol_server_branch }}" ]; then
-            cat >> downloads/metadata.json << EOF
-            "sol-server": {
-              "branch": "${{ steps.metadata.outputs.sol_server_branch }}",
-              "commit": "${{ steps.metadata.outputs.sol_server_commit }}",
-              "tag": "${{ steps.metadata.outputs.sol_server_tag }}",
-              "release_url": "${{ steps.metadata.outputs.sol_server_url }}"
-            },
-        EOF
-          fi
-        else
-          # No metadata available, just note which components are included
-          cat >> downloads/metadata.json << EOF
-            "sol-software": { "included": true },
-            "sol-utils": { "included": true },
-            "sol-server": { "included": true },
-        EOF
-        fi
-        
-        # Close the JSON (remove trailing comma and add closing braces)
-        sed -i '$ s/,$//' downloads/metadata.json
-        cat >> downloads/metadata.json << EOF
-          }
+          "components": {}
         }
         EOF
         
-        # Pretty print the JSON
-        jq . downloads/metadata.json > downloads/metadata.json.tmp && mv downloads/metadata.json.tmp downloads/metadata.json
+        # Merge component metadata files if they exist
+        if [ -f "sol-software-metadata.json" ]; then
+          echo "Merging sol-software metadata"
+          jq '.components["sol-software"] = input' downloads/metadata.json sol-software-metadata.json > tmp.json && mv tmp.json downloads/metadata.json
+        else
+          echo "No sol-software metadata found, marking as included"
+          jq '.components["sol-software"] = {"included": true}' downloads/metadata.json > tmp.json && mv tmp.json downloads/metadata.json
+        fi
         
-        echo "Created metadata.json:"
+        if [ -f "sol-utils-metadata.json" ]; then
+          echo "Merging sol-utils metadata"
+          jq '.components["sol-utils"] = input' downloads/metadata.json sol-utils-metadata.json > tmp.json && mv tmp.json downloads/metadata.json
+        else
+          echo "No sol-utils metadata found, marking as included"
+          jq '.components["sol-utils"] = {"included": true}' downloads/metadata.json > tmp.json && mv tmp.json downloads/metadata.json
+        fi
+        
+        if [ -f "sol-server-metadata.json" ]; then
+          echo "Merging sol-server metadata"
+          jq '.components["sol-server"] = input' downloads/metadata.json sol-server-metadata.json > tmp.json && mv tmp.json downloads/metadata.json
+        else
+          echo "No sol-server metadata found, marking as included"
+          jq '.components["sol-server"] = {"included": true}' downloads/metadata.json > tmp.json && mv tmp.json downloads/metadata.json
+        fi
+        
+        # Pretty print the final JSON
+        jq . downloads/metadata.json > tmp.json && mv tmp.json downloads/metadata.json
+        
+        echo "Created combined metadata.json:"
         cat downloads/metadata.json
     
     - name: Create ZIP file
@@ -329,30 +341,20 @@ jobs:
         BODY="Combined SOL release package"
         BODY="${BODY}\nBuild date: ${{ steps.date.outputs.date }}"
         
-        # Add component source information if metadata is available
-        if [ "${{ steps.metadata.outputs.has_metadata }}" = "true" ]; then
+        # Add component source information from metadata.json
+        if [ -f "downloads/metadata.json" ]; then
           BODY="${BODY}\n\n## Component Sources"
           
-          # Add sol-software info if available
-          if [ -n "${{ steps.metadata.outputs.sol_software_branch }}" ]; then
-            BODY="${BODY}\n- **sol-software** ${{ steps.metadata.outputs.sol_software_tag }} "
-            BODY="${BODY}(branch: ${{ steps.metadata.outputs.sol_software_branch }}, "
-            BODY="${BODY}commit: ${{ steps.metadata.outputs.sol_software_commit }})"
-          fi
-          
-          # Add sol-utils info if available
-          if [ -n "${{ steps.metadata.outputs.sol_utils_branch }}" ]; then
-            BODY="${BODY}\n- **sol-utils** ${{ steps.metadata.outputs.sol_utils_tag }} "
-            BODY="${BODY}(branch: ${{ steps.metadata.outputs.sol_utils_branch }}, "
-            BODY="${BODY}commit: ${{ steps.metadata.outputs.sol_utils_commit }})"
-          fi
-          
-          # Add sol-server info if available
-          if [ -n "${{ steps.metadata.outputs.sol_server_branch }}" ]; then
-            BODY="${BODY}\n- **sol-server** ${{ steps.metadata.outputs.sol_server_tag }} "
-            BODY="${BODY}(branch: ${{ steps.metadata.outputs.sol_server_branch }}, "
-            BODY="${BODY}commit: ${{ steps.metadata.outputs.sol_server_commit }})"
-          fi
+          # Extract component information using jq
+          for component in sol-software sol-utils sol-server; do
+            if [ "$(jq -r ".components[\"$component\"].branch // empty" downloads/metadata.json)" != "" ]; then
+              BRANCH=$(jq -r ".components[\"$component\"].branch" downloads/metadata.json)
+              COMMIT=$(jq -r ".components[\"$component\"].commit_sha" downloads/metadata.json)
+              TAG=$(jq -r ".components[\"$component\"].tag_name" downloads/metadata.json)
+              
+              BODY="${BODY}\n- **$component** $TAG (branch: $BRANCH, commit: ${COMMIT:0:7})"
+            fi
+          done
         fi
         
         # Add file listing
