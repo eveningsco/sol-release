@@ -351,8 +351,30 @@ jobs:
               BRANCH=$(jq -r ".components[\"$component\"].branch" downloads/metadata.json)
               COMMIT=$(jq -r ".components[\"$component\"].commit_sha" downloads/metadata.json)
               TAG=$(jq -r ".components[\"$component\"].tag_name" downloads/metadata.json)
+              PR_NUMBER=$(jq -r ".components[\"$component\"].pr_number // empty" downloads/metadata.json)
               
-              BODY="${BODY}\n- **$component** $TAG (branch: $BRANCH, commit: ${COMMIT:0:7})"
+              # Build component info line
+              COMPONENT_INFO="- **$component** $TAG (branch: $BRANCH, commit: ${COMMIT:0:7}"
+              
+              # Add PR info if available
+              if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
+                COMPONENT_INFO="${COMPONENT_INFO}, PR: #$PR_NUMBER"
+              fi
+              
+              COMPONENT_INFO="${COMPONENT_INFO})"
+              BODY="${BODY}\n${COMPONENT_INFO}"
+              
+              # Add PR commits if available
+              PR_COMMITS=$(jq -r ".components[\"$component\"].pr_commits[]? // empty" downloads/metadata.json 2>/dev/null)
+              if [ -n "$PR_COMMITS" ]; then
+                BODY="${BODY}\n  <details><summary>Commits</summary>\n"
+                while IFS= read -r commit; do
+                  if [ -n "$commit" ]; then
+                    BODY="${BODY}\n  - $commit"
+                  fi
+                done <<< "$PR_COMMITS"
+                BODY="${BODY}\n  </details>"
+              fi
             fi
           done
         fi
