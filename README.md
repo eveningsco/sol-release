@@ -175,6 +175,57 @@ Common issues and solutions:
 6. Combined release is created with comprehensive metadata
 7. SOL devices check for and download these combined releases
 
+## Testing
+
+The repository includes comprehensive unit tests for workflow simulation and media cleanup operations.
+
+### Test Modules
+
+- **`tests/test_media_cleanup.py`** - 15 tests covering:
+  - Media file metadata serialization and operations
+  - Folder state management and resolution tracking
+  - Media cleanup processor workflow simulation
+  - Media tagging operations
+  - Combined release package creation
+  - Full workflow end-to-end testing
+
+### Running Tests
+
+```bash
+cd tests
+python -m pytest test_media_cleanup.py -v
+```
+
+### Test Coverage
+
+All tests use pytest framework and simulate:
+- Repository dispatch events from component repos
+- Workflow step execution and artifact downloads
+- Metadata merging and serialization
+- Combined release package creation
+- Media file analysis and tagging workflows
+
+## Media Cleanup Module
+
+The `tests/media_cleanup.py` module provides simulation tools for media file management workflows:
+
+### Key Components
+
+- **`MediaFileMetadata`** - Represents individual media files with shot types, categories, and tags
+- **`FolderState`** - Tracks folder processing status and resolution percentages
+- **`MediaCleanupProcessor`** - Orchestrates media file scanning, analysis, and resolution
+- **`MediaTaggingSimulator`** - Handles release tagging and categorization operations
+- **`CombinedReleaseSimulator`** - Creates combined release packages from processed media
+
+### Workflow Simulation
+
+The `simulate_full_workflow()` function orchestrates complete media cleanup pipelines:
+1. Directory scanning for media files
+2. Automatic analysis and categorization
+3. Release tagging with version identifiers
+4. Combined package creation
+5. Cleanup report generation
+
 ## Contributing
 
 When modifying the release process:
