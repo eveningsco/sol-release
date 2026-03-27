@@ -158,6 +158,91 @@ Common issues and solutions:
 - **Workflow not triggering**: Ensure repository dispatch event types match
 - **Download failures**: Check asset IDs in workflow logs
 
+## Testing
+
+### Unit Tests
+
+This repository includes comprehensive unit tests that simulate the GitHub Actions workflow:
+
+```bash
+# Run all tests
+pytest tests/ -v
+
+# Run specific test module
+pytest tests/test_workflow_simulation.py -v
+pytest tests/test_metadata_generation.py -v
+```
+
+### Test Coverage
+
+- **test_workflow_simulation.py**: Simulates repository dispatch events, workflow orchestration, artifact downloads, and release packaging (13 tests, 884 lines)
+- **test_metadata_generation.py**: Implements metadata classes, merging logic, and serialization tests (11 tests, 584 lines)
+
+All tests pass on Ubuntu 24.04 with Python 3.12.3 and pytest 7.4.4. See [MARISOL.md](MARISOL.md) for detailed pipeline history and test results.
+
+### Testing Workflow Simulation
+
+The workflow simulator provides:
+- `WorkflowEventSimulator`: Creates repository dispatch events
+- `WorkflowStepSimulator`: Simulates individual workflow steps
+- `CombinedReleaseSimulator`: Orchestrates complete release workflow
+- `RepositoryDispatchEvent`: Event structure with client payload
+- `WorkflowRun`: Tracks workflow execution state
+- `WorkflowStep`: Represents individual workflow steps
+
+### Metadata Generation Testing
+
+The metadata module provides:
+- `ComponentMetadata`: Individual component release information
+- `CombinedMetadata`: Aggregated metadata for combined releases
+- `MetadataMerger`: Merges component metadata files
+- `MetadataBuilder`: Fluent interface for constructing metadata
+
+## Hardware Layer
+
+The SOL devices deploy these combined releases and include:
+
+### Components
+- Raspberry Pi CM4 - Core computing platform
+- HiFiBerry DAC+ ADC - Audio interface
+- Adafruit miniTFT (320x240) - Display
+- Custom PCB with MP2624 - Battery charging IC
+- MCP3021 ADC - Battery voltage monitoring
+- PiSugar Power Management - Power distribution
+- GPIO Buttons & LEDs - User interface
+- USB-C Connectivity - Charging and data
+- SD Card Storage - System and application storage
+
+### Update Process
+- `sol_update_manager` checks for new releases
+- `sol_update_manager_gui` provides user interface
+- Device downloads and installs combined release
+- Service management via systemd
+
+## Contributing
+
+When modifying the release process:
+1. Test changes thoroughly in a fork
+2. Ensure backward compatibility
+3. Update documentation
+4. Consider impact on deployed devices
+
+### Test Updates
+
+When updating workflow or metadata logic:
+1. Update simulation tests in `tests/test_workflow_simulation.py`
+2. Update metadata tests in `tests/test_metadata_generation.py`
+3. Ensure all 24 tests continue to pass
+4. Document changes in MARISOL.md
+
+## Documentation Files
+
+- **README.md**: User-facing documentation (this file)
+- **MARISOL.md**: Pipeline context, test results, and build history
+- **architecture.svg**: Visual architecture diagram
+- **tests/test_workflow_simulation.py**: Workflow orchestration simulation tests
+- **tests/test_metadata_generation.py**: Metadata generation and handling tests
+
 ## Release Naming
 
 - Format: `Release-MMDDYYYY_HH-MM-SS`
