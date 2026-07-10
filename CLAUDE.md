@@ -175,15 +175,15 @@ pyinstaller gpio_shutdown_trigger.spec
 - `SOLUI.py` - UI application for the device display
   - Shows battery status, recording state, and system info
   - Uses tkinter with Pillow for graphics rendering
-- `mcp3021.py` - ADC interface for battery monitoring (I2C address 0x48)
+- `mcp3021.py` - ADC interface for battery monitoring (I2C address 0x4D, auto-detects 0x48 on legacy hardware)
   - Reads battery voltage through voltage divider
   - Calculates battery percentage based on LiPo voltage ranges
 - `mp2624.py` - Battery charger interface (I2C address 0x4B)
   - Manages input current limits
   - Controls watchdog timer for safety
 - Hardware interfaces via RPi.GPIO, smbus2 for I2C communication
-- Audio handling with pyaudio (HiFiBerry DAC+ ADC)
-- Display management with Pillow and tkinter (Adafruit miniTFT)
+- Audio handling with pyaudio (PCM1865 codec, I2S)
+- Display management with Pillow and tkinter (ST7789V 240x240 TFT)
 
 ### SOL Server
 - MVC architecture with:
@@ -229,8 +229,8 @@ System services managed by systemd:
 
 ### Hardware Components
 - Raspberry Pi CM4
-- HiFiBerry DAC+ ADC (uses custom DTS overlay)
-- Adafruit miniTFT display (320x240, fbcp-ili9341 driver)
+- PCM1865 audio codec, I2S (ALSA card `pcm1865`, custom DTS overlay)
+- ST7789V TFT display (240x240, console mapped via con2fbmap / fb1)
 - Custom PCB with battery management (MP2624), ADC (MCP3021)
 - PiSugar power management
 - GPIO pins for buttons (PIN_BTN_0: 27) and LEDs
