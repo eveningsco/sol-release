@@ -216,9 +216,12 @@ jobs:
         download_asset "expand_exfat" "downloads/bin/expand_exfat"
         download_asset "provision" "downloads/bin/provision"
         download_asset "mp2624" "downloads/bin/mp2624"
-        
+        download_asset "system_metrics" "downloads/bin/system_metrics"
+
         # Download service files
         download_asset "mp2624_watchdog.service" "downloads/services/mp2624_watchdog.service"
+        download_asset "system_metrics.service" "downloads/services/system_metrics.service"
+        download_asset "system_metrics.timer" "downloads/services/system_metrics.timer"
         download_asset "mass_gadget_watchdog.service" "downloads/services/mass_gadget_watchdog.service"
         download_asset "update_version_info.service" "downloads/services/update_version_info.service"
         download_asset "update_version_info.timer" "downloads/services/update_version_info.timer"
@@ -235,7 +238,8 @@ jobs:
         download_asset "sol_software-logrotate" "downloads/logrotate/sol_software-logrotate"
         download_asset "mass_gadget_watchdog-logrotate" "downloads/logrotate/mass_gadget_watchdog-logrotate"
         download_asset "sol_update_manager-logrotate" "downloads/logrotate/sol_update_manager-logrotate"
-        
+        download_asset "system_metrics-logrotate" "downloads/logrotate/system_metrics-logrotate"
+
         # Download metadata (optional - don't fail if not found)
         METADATA_ID=$(echo "$RELEASE_INFO" | jq -r ".assets[] | select(.name==\"metadata.json\") | .id")
         if [ -n "$METADATA_ID" ] && [ "$METADATA_ID" != "null" ]; then
