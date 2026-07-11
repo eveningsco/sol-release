@@ -222,6 +222,7 @@ jobs:
         download_asset "mp2624_watchdog.service" "downloads/services/mp2624_watchdog.service"
         download_asset "system_metrics.service" "downloads/services/system_metrics.service"
         download_asset "system_metrics.timer" "downloads/services/system_metrics.timer"
+        download_asset "sol-fsck-recordings.service" "downloads/services/sol-fsck-recordings.service"
         download_asset "mass_gadget_watchdog.service" "downloads/services/mass_gadget_watchdog.service"
         download_asset "update_version_info.service" "downloads/services/update_version_info.service"
         download_asset "update_version_info.timer" "downloads/services/update_version_info.timer"
